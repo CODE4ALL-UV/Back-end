@@ -18,3 +18,8 @@ if str(ROOT) not in sys.path:
 
 _db_file = Path(tempfile.mkdtemp()) / "code4all-test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_db_file.as_posix()}"
+
+# Docente y director solo se registran con el código de su rol. Las pruebas
+# usan uno inventado; nunca el de producción.
+os.environ["DOCENTE_SIGNUP_CODE"] = "codigo-de-prueba-docente"
+os.environ["DIRECTOR_SIGNUP_CODE"] = "codigo-de-prueba-director"

@@ -5,6 +5,7 @@ comprueban course-content y assessment. Si los servicios no compartieran la
 clave o la base, esto es lo primero que fallaría.
 """
 
+import os
 import uuid
 
 import pytest
@@ -21,7 +22,13 @@ def _register_and_login(rol: str) -> dict:
 
     registered = client.post(
         "/api/auth/register",
-        json={"nombre": rol.title(), "correo": email, "password": "clave-segura", "rol": rol},
+        json={
+            "nombre": rol.title(),
+            "correo": email,
+            "password": "clave-segura",
+            "rol": rol,
+            "codigo_invitacion": os.environ.get(f"{rol.upper()}_SIGNUP_CODE"),
+        },
     )
     assert registered.status_code == 201, registered.text
 
