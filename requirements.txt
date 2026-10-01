@@ -1,0 +1,15 @@
+# Las dependencias de cada microservicio viven en su propio repositorio; aquí
+# solo se juntan. Así, si un servicio añade una librería, el gateway la
+# instala sin que nadie tenga que acordarse de copiarla.
+-r services/neon-storage-backend-service/requirements.txt
+-r services/user-management-backend-service/requirements.txt
+-r services/course-content-backend-service/requirements.txt
+-r services/assessment-backend-service/requirements.txt
+-r services/progress-tracking-backend-service/requirements.txt
+-r services/accessibility-backend-service/requirements.txt
+-r services/multimodal-interaction-backend-service/requirements.txt
+-r services/device-management-backend-service/requirements.txt
+
+fastapi
+uvicorn
+python-dotenv

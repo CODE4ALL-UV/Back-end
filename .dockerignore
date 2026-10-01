@@ -1,0 +1,9 @@
+# Nada de esto hace falta dentro de la imagen, y los .env no deben entrar
+# nunca: los secretos llegan por las variables de entorno de Render.
+.git
+**/.git
+**/.venv
+**/venv
+**/__pycache__
+**/.pytest_cache
+**/.env

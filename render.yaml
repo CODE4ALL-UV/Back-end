@@ -1,0 +1,52 @@
+# Cómo se despliega el API Gateway en Render.
+#
+# Es un servicio NUEVO, aparte del code4all-api que hoy sale del monolito de
+# user-management. Así se puede probar con calma sin tocar lo que ya funciona,
+# y el cambio de uno a otro es solo cambiar BACKEND_URL en la web. Los pasos
+# están en el README.
+#
+# Los secretos NO van aquí. `sync: false` significa que el valor se escribe en
+# el panel de Render y no se guarda en el repositorio.
+
+services:
+  - type: web
+    name: code4all-gateway
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+
+    # main de este repositorio solo tiene el README: sin esto Render
+    # intentaría construir desde ahí y fallaría.
+    branch: dev-saavedra
+
+    envVars:
+      # Cadena de conexión de Neon, la misma que usa hoy code4all-api. Mejor
+      # la del pooler (el host lleva «-pooler»): aguanta muchas más
+      # conexiones si algún día los servicios se despliegan por separado.
+      - key: DATABASE_URL
+        sync: false
+
+      # La MISMA clave que tiene code4all-api, copiada de su panel. No se
+      # deja que Render la genere: con una clave nueva, todas las sesiones
+      # abiertas dejarían de valer al cambiar de servidor. Y si algún día los
+      # servicios van por separado, todos deben compartirla o los tokens de
+      # uno no valdrán en los otros.
+      - key: SECRET_KEY
+        sync: false
+
+      - key: ALGORITHM
+        value: HS256
+
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "1440"
+
+      # Identificadores de Google para el inicio de sesión.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_SERVER_CLIENT_ID
+        sync: false
+
+    # Render llama aquí para saber si el servicio sigue vivo. Esta ruta no
+    # toca la base de datos, así que responde aunque Neon esté dormida.
+    healthCheckPath: /api/system/health

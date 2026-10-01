@@ -1,0 +1,32 @@
+[submodule "services/neon-storage-backend-service"]
+	path = services/neon-storage-backend-service
+	url = https://github.com/CODE4ALL-UV/neon-storage-backend-service.git
+	branch = dev-saavedra
+[submodule "services/user-management-backend-service"]
+	path = services/user-management-backend-service
+	url = https://github.com/CODE4ALL-UV/user-management-backend-service.git
+	branch = dev-saavedra
+[submodule "services/course-content-backend-service"]
+	path = services/course-content-backend-service
+	url = https://github.com/CODE4ALL-UV/course-content-backend-service.git
+	branch = dev-saavedra
+[submodule "services/assessment-backend-service"]
+	path = services/assessment-backend-service
+	url = https://github.com/CODE4ALL-UV/assessment-backend-service.git
+	branch = dev-saavedra
+[submodule "services/accessibility-backend-service"]
+	path = services/accessibility-backend-service
+	url = https://github.com/CODE4ALL-UV/accessibility-backend-service.git
+	branch = dev-saavedra
+[submodule "services/progress-tracking-backend-service"]
+	path = services/progress-tracking-backend-service
+	url = https://github.com/CODE4ALL-UV/progress-tracking-backend-service.git
+	branch = dev-saavedra
+[submodule "services/multimodal-interaction-backend-service"]
+	path = services/multimodal-interaction-backend-service
+	url = https://github.com/CODE4ALL-UV/multimodal-interaction-backend-service.git
+	branch = dev-saavedra
+[submodule "services/device-management-backend-service"]
+	path = services/device-management-backend-service
+	url = https://github.com/CODE4ALL-UV/device-management-backend-service.git
+	branch = dev-saavedra
