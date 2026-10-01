@@ -54,6 +54,7 @@ NEW_ROUTES = {
     "DELETE /api/courses/{course_id}",
     "DELETE /api/courses/{course_id}/enrollment",
     "DELETE /api/courses/{course_id}/overrides/{scope}/{target_id}",
+    "DELETE /api/courses/{course_id}/students/{student_id}",
     "GET /api/courses/mine",
     "GET /api/courses/{course_id}",
     "GET /api/courses/{course_id}/overrides",
