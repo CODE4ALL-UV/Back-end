@@ -46,10 +46,24 @@ MONOLITH_ROUTES = {
     "PUT /api/oversight/content/{section_id}",
 }
 
-# Lo único nuevo: el estado del sistema, de device-management.
+# Lo nuevo: el estado del sistema (device-management) y los cursos por
+# docente (course-content y progress-tracking).
 NEW_ROUTES = {
     "GET /api/system/health",
     "GET /api/system/status",
+    "DELETE /api/courses/{course_id}",
+    "DELETE /api/courses/{course_id}/enrollment",
+    "DELETE /api/courses/{course_id}/overrides/{scope}/{target_id}",
+    "GET /api/courses/mine",
+    "GET /api/courses/{course_id}",
+    "GET /api/courses/{course_id}/overrides",
+    "GET /api/courses/{course_id}/overrides/{scope}/{target_id}",
+    "GET /api/oversight/courses",
+    "PATCH /api/courses/{course_id}",
+    "POST /api/courses",
+    "POST /api/courses/join",
+    "POST /api/courses/{course_id}/join-code",
+    "PUT /api/courses/{course_id}/overrides/{scope}/{target_id}",
 }
 
 
