@@ -54,6 +54,28 @@ services:
       - key: DIRECTOR_SIGNUP_CODE
         sync: false
 
+      # Entrar con Facebook: el identificador y la clave secreta de la app
+      # (developers.facebook.com → la app → Configuración → Básica). Sin
+      # ellos el botón dice que todavía no está disponible.
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+
+      # Correo para recuperar la contraseña. Va por la API de Brevo porque
+      # Render gratis bloquea SMTP. MAIL_FROM es un remitente verificado en
+      # Brevo. Sin ellos, «¿Olvidaste tu contraseña?» dice que no está
+      # configurado.
+      - key: BREVO_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: MAIL_FROM_NAME
+        value: Code4All
+      # Adónde lleva el enlace del correo.
+      - key: FRONTEND_URL
+        value: https://code4all-web.onrender.com
+
     # Render llama aquí para saber si el servicio sigue vivo. Esta ruta no
     # toca la base de datos, así que responde aunque Neon esté dormida.
     healthCheckPath: /api/system/health

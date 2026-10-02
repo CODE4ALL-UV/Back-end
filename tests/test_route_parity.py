@@ -46,9 +46,13 @@ MONOLITH_ROUTES = {
     "PUT /api/oversight/content/{section_id}",
 }
 
-# Lo nuevo: el estado del sistema (device-management) y los cursos por
-# docente (course-content y progress-tracking).
+# Lo nuevo: el estado del sistema (device-management), los cursos por
+# docente (course-content y progress-tracking), y en user-management la
+# entrada con Facebook y la recuperación de contraseña.
 NEW_ROUTES = {
+    "POST /api/auth/facebook",
+    "POST /api/auth/password/forgot",
+    "POST /api/auth/password/reset",
     "GET /api/system/health",
     "GET /api/system/status",
     "DELETE /api/courses/{course_id}",

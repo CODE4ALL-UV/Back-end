@@ -112,6 +112,14 @@ deshacer un solo cambio.
    - `SECRET_KEY`: **copiada de `code4all-api`** → Environment. Si es otra,
      todas las sesiones abiertas dejan de valer al cambiar de servidor.
    - `GOOGLE_CLIENT_ID` y `GOOGLE_SERVER_CLIENT_ID`: los de `code4all-api`.
+     `GOOGLE_CLIENT_ID` es **obligatorio**: el servidor comprueba que cada
+     inicio con Google sea de este Client ID, y sin él responde que Google
+     no está configurado. Si la web y el móvil usan IDs distintos, van los
+     dos separados por comas.
+   - `FACEBOOK_APP_ID` y `FACEBOOK_APP_SECRET`: los de la app de Facebook
+     (ver «Entrar con Facebook» más abajo). Opcionales.
+   - `BREVO_API_KEY` y `MAIL_FROM`: para el correo de «¿Olvidaste tu
+     contraseña?» (ver «Correo» más abajo). Opcionales.
 3. **Comprobar que arrancó.**
    - `https://code4all-gateway.onrender.com/api/system/health` → `{"status": "ok"}`
    - `https://code4all-gateway.onrender.com/api/system/status` → `"database": {"ok": true, ...}`
@@ -136,6 +144,34 @@ deshacer un solo cambio.
 
 La base de datos no cambia en ningún paso: el gateway usa las mismas tablas de
 Neon, y al arrancar solo crea lo que falte, que es nada.
+
+## Entrar con Facebook
+
+1. En <https://developers.facebook.com/apps> → Crear app → «Autenticar y
+   solicitar datos a los usuarios con el inicio de sesión con Facebook».
+2. Inicio de sesión con Facebook → Configuración → **URI de redireccionamiento
+   de OAuth válidos**: `https://code4all-web.onrender.com/` (con la barra
+   final) y, para probar en local, `http://localhost:5000/`.
+3. Configuración → Básica: copiar el identificador de la app y la clave
+   secreta. El identificador va en `FACEBOOK_APP_ID` del gateway **y** de
+   `code4all-web`; la clave secreta, solo en el gateway.
+4. Para que entre cualquiera y no solo quien administra la app: poner la URL
+   de la política de privacidad y pasar la app a modo **Activo**.
+
+## Correo
+
+El enlace de «¿Olvidaste tu contraseña?» sale por la API de Brevo: Render
+gratis bloquea los puertos SMTP desde septiembre de 2025.
+
+1. Cuenta gratuita en <https://www.brevo.com> (300 correos al día).
+2. Senders, Domains & Dedicated IPs → Senders → añadir y verificar el correo
+   que enviará los mensajes. No hace falta dominio propio.
+3. SMTP & API → API Keys → crear una clave.
+4. En el gateway: `BREVO_API_KEY` = la clave, `MAIL_FROM` = el correo
+   verificado.
+
+En local, sin Brevo y con `ALLOW_DEV_LOGIN=1`, el enlace se escribe en la
+consola del servidor en vez de enviarse.
 
 ## Sacar un servicio aparte
 
