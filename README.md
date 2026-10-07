@@ -7,7 +7,7 @@ Cada microservicio vive en su propio repositorio y llega aquí como **submódulo
 de git** en `services/`. Hoy todos corren dentro del mismo proceso; más abajo
 se explica por qué y cómo cambiarlo.
 
-## Qué hay en cada repositorio
+## Qué hay en cada repositorio 
 
 | Recuadro del diagrama | Repositorio | Paquete | Rutas | Tablas que escribe |
 |---|---|---|---|---|
