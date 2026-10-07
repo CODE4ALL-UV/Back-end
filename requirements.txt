@@ -13,3 +13,7 @@
 fastapi
 uvicorn
 python-dotenv
+pytest
+pytest-cov
+httpx2
+python-dotenv
