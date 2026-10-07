@@ -1,32 +1,79 @@
 # Back-end · API Gateway de Code4All
 
-Es la única puerta del backend. La aplicación Flutter solo conoce esta
-dirección, y el gateway entrega cada ruta al microservicio que la atiende.
+Este repositorio es la **puerta de entrada del backend** de Code4All. La app
+(Flutter) solo conoce una dirección, la de este gateway, y el gateway le
+entrega cada petición al microservicio que la atiende: el login a gestión de
+usuarios, las ediciones del curso a contenidos, las respuestas de los quices a
+evaluación, y así con todo.
 
 Cada microservicio vive en su propio repositorio y llega aquí como **submódulo
-de git** en `services/`. Hoy todos corren dentro del mismo proceso; más abajo
-se explica por qué y cómo cambiarlo.
+de git** en la carpeta `services/`. Hoy todos corren **dentro del mismo
+proceso**: el gateway los importa y monta sus rutas en una sola aplicación de
+FastAPI. Más abajo se explica por qué se hizo así y cómo cambiarlo.
 
-## Qué hay en cada repositorio 
+## Qué hay en cada repositorio
 
 | Recuadro del diagrama | Repositorio | Paquete | Rutas | Tablas que escribe |
 |---|---|---|---|---|
 | API Gateway | `Back-end` (este) | `main.py` | `/` | — |
-| Gestión de usuarios | `user-management-backend-service` | `user_management_service` | `/api/auth/*`, `/api/user/upload-photo`, `/uploads/*` | `Usuario` |
-| Curso y contenidos de Python | `course-content-backend-service` | `course_content_service` | `/api/course/*`, `/api/modules/*` | `CourseOverride` |
-| Ejercicios y evaluación | `assessment-backend-service` | `assessment_service` | `/api/analytics/*` | `QuizAnswer`, `ActivityCompletion` |
-| Progreso y seguimiento | `progress-tracking-backend-service` | `progress_tracking_service` | `/api/director/*`, `/api/oversight/*` | `student_performance`, `TeacherReview`, `ContentReview` |
-| Accesibilidad y adaptación | `accessibility-backend-service` | `accessibility_service` | `/api/braille/*`, `/api/youtube/*` | — |
-| Interacción multimodal | `multimodal-interaction-backend-service` | `multimodal_service` | `/api/signs/*` | — |
-| Infraestructura y dispositivos | `device-management-backend-service` | `device_management_service` | `/api/system/*` | — |
-| Base de datos / persistencia | `neon-storage-backend-service` | `neon_storage` | — | define todas |
+| Gestión de usuarios | [user-management-backend-service](https://github.com/CODE4ALL-UV/user-management-backend-service) | `user_management_service` | `/api/auth/*`, `/api/user/upload-photo`, `/uploads/*` | `Usuario` |
+| Curso y contenidos de Python | [course-content-backend-service](https://github.com/CODE4ALL-UV/course-content-backend-service) | `course_content_service` | `/api/courses/*`, `/api/course/*`, `/api/modules/*` | `Course`, `CourseEnrollment`, `CourseOverride` |
+| Ejercicios y evaluación | [assessment-backend-service](https://github.com/CODE4ALL-UV/assessment-backend-service) | `assessment_service` | `/api/analytics/*` | `QuizAnswer`, `ActivityCompletion` |
+| Progreso y seguimiento | [progress-tracking-backend-service](https://github.com/CODE4ALL-UV/progress-tracking-backend-service) | `progress_tracking_service` | `/api/director/*`, `/api/oversight/*` | `student_performance`, `TeacherReview`, `ContentReview` |
+| Accesibilidad y adaptación | [accessibility-backend-service](https://github.com/CODE4ALL-UV/accessibility-backend-service) | `accessibility_service` | `/api/braille/*`, `/api/youtube/*` | — |
+| Interacción multimodal | [multimodal-interaction-backend-service](https://github.com/CODE4ALL-UV/multimodal-interaction-backend-service) | `multimodal_service` | `/api/signs/*` | — |
+| Infraestructura y dispositivos | [device-management-backend-service](https://github.com/CODE4ALL-UV/device-management-backend-service) | `device_management_service` | `/api/system/*` | — |
+| Base de datos / persistencia | [neon-storage-backend-service](https://github.com/CODE4ALL-UV/neon-storage-backend-service) | `neon_storage` | — | define todas |
 
-Todos los servicios siguen el mismo contrato: su paquete tiene un
-`routes.py` con `register(app)`, que es lo único que el gateway llama, y un
-`main.py` para arrancarlo solo.
+La app está en [Front-end](https://github.com/CODE4ALL-UV/Front-end).
 
-Las rutas son **exactamente las mismas** que tenía el monolito: la aplicación
-no necesita ningún cambio. `tests/test_route_parity.py` lo comprueba.
+Todos los servicios siguen el mismo contrato: su paquete tiene un `routes.py`
+con una función `register(app)`, que es lo único que el gateway llama, y un
+`main.py` para arrancarlo solo. Cada repositorio tiene su propio README con el
+detalle de sus rutas, qué guarda y cómo probarlo.
+
+## Qué rutas expone
+
+Al montar todo quedan **52 rutas**:
+
+- **Las 33 que tenía el monolito** (`code4all-api`), sin cambios. La app que
+  hoy habla con el monolito puede hablar con el gateway sin tocar nada.
+- **19 nuevas**, que solo existen en el gateway:
+  - entrar con Facebook y recuperar la contraseña por correo
+    (`/api/auth/facebook`, `/api/auth/password/forgot`, `/api/auth/password/reset`);
+  - los cursos por docente (`/api/courses/*`, 13 rutas) y la vista de cursos
+    de la coordinación (`/api/oversight/courses`);
+  - el estado del sistema (`/api/system/health` y `/api/system/status`).
+
+`tests/test_route_parity.py` lo comprueba: que no se haya perdido ninguna ruta
+del monolito y que no aparezca ninguna que no esté en la lista de nuevas.
+
+Con el servidor corriendo, la documentación interactiva de todas las rutas está
+en `/docs`.
+
+## Cómo funciona `main.py`
+
+1. **Carga el `.env`** antes de importar nada, porque los servicios leen
+   `DATABASE_URL` y `SECRET_KEY` en cuanto se importan.
+2. **Añade cada `services/*-backend-service` al `sys.path`**, en orden
+   alfabético y al final, para que nada de un servicio tape el `main.py` del
+   gateway. Así se pueden importar `user_management_service`,
+   `neon_storage`, etc., sin instalarlos con pip.
+3. **Prepara la base de datos** con `prepare_database()` de neon-storage: crea
+   las tablas que falten, aplica las migraciones y crea el Curso general. Si
+   Neon no responde, avisa en el log y **arranca igual**.
+4. **Configura CORS.** Solo pueden llamar al API desde el navegador la web
+   publicada (`https://code4all-web.onrender.com`), `localhost` en cualquier
+   puerto y lo que se ponga en `CORS_ORIGINS`. No se usan cookies
+   (`allow_credentials=False`): la sesión viaja en la cabecera
+   `Authorization`.
+5. **Registra los servicios** en este orden: usuarios, contenidos, evaluación,
+   progreso, accesibilidad, multimodal y dispositivos. neon-storage no se
+   registra porque no tiene rutas.
+6. Su única ruta propia es `GET /`, que responde `{"status": "online", ...}`.
+
+No hay manejo de errores global: cada servicio responde sus propios errores,
+con mensajes en castellano.
 
 ## Por qué un solo despliegue y no ocho
 
@@ -60,12 +107,44 @@ copy .env.example .env
 uvicorn main:app --reload
 ```
 
-El `.env` lleva la cadena de Neon y la misma `SECRET_KEY` que usa Render. La
-documentación de todas las rutas queda en `http://127.0.0.1:8000/docs`.
+- El `.env` lleva la cadena de Neon y la misma `SECRET_KEY` que usa Render.
+  Para probar sin tocar Neon se puede poner una base SQLite local, por ejemplo
+  `DATABASE_URL=sqlite:///./local.db`.
+- `requirements.txt` incluye el `requirements.txt` de cada servicio, así que
+  un solo `pip install` deja todo listo.
+- `git submodule foreach "git checkout dev-saavedra"` deja cada servicio en su
+  rama, para poder hacer commits dentro de `services/<repo>` como en cualquier
+  repositorio.
+- Después de un `git pull` del gateway conviene correr
+  `git submodule update --init --recursive`, para que cada servicio quede en
+  la versión que el gateway tiene apuntada.
+- Para probar el login de Google sin cuenta de Google, se puede añadir
+  `ALLOW_DEV_LOGIN=1` al `.env` (solo en local).
 
-`git submodule foreach "git checkout dev-saavedra"` deja cada servicio en su
-rama, para poder hacer commits dentro de `services/<repo>` como en cualquier
-repositorio.
+La documentación de todas las rutas queda en `http://127.0.0.1:8000/docs`.
+
+## Variables de entorno
+
+| Variable | Para qué | ¿Obligatoria? |
+|---|---|---|
+| `DATABASE_URL` | La cadena de conexión de Neon. Sin ella el gateway no arranca. | Sí |
+| `SECRET_KEY` | Firma y comprueba los tokens de sesión. Tiene que ser la misma de `code4all-api`. | Sí |
+| `ALGORITHM` | Algoritmo del token. Por defecto `HS256`. | No |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Duración de la sesión. Por defecto `1440` (24 h). | No |
+| `GOOGLE_CLIENT_ID` | El Client ID de Google de Code4All (varios, separados por comas). | Para entrar con Google |
+| `DOCENTE_SIGNUP_CODE`, `DIRECTOR_SIGNUP_CODE` | Los códigos para registrarse como docente o director. Sin ellos esos registros quedan cerrados. | No |
+| `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET` | La app de Facebook. | Para entrar con Facebook |
+| `BREVO_API_KEY`, `MAIL_FROM` | El correo de «¿Olvidaste tu contraseña?». | Para recuperar la contraseña |
+| `MAIL_FROM_NAME` | El nombre del remitente. Por defecto `Code4All`. | No |
+| `FRONTEND_URL` | Adónde lleva el enlace del correo. Por defecto la web publicada. | No |
+| `TRANSLATE_PROVIDER`, `TRANSLATE_API_KEY` | Traducir los subtítulos de YouTube (`google` o `deepl`). | No |
+| `CORS_ORIGINS` | Otras páginas que pueden llamar al API desde el navegador, separadas por comas. | No |
+| `ALLOW_DEV_LOGIN` | `1` para aceptar tokens `dev:correo` y escribir los correos en consola. **Nunca en Render.** | No |
+
+`.env.example` trae las principales. `render.yaml` declara las que necesita
+Render; `TRANSLATE_*` no está ahí y, si se quiere traducir los subtítulos, hay
+que añadirlas a mano en el panel. Qué hace cada una en detalle está en el
+README del servicio que la usa.
 
 ## Pruebas
 
@@ -75,7 +154,23 @@ Ninguna prueba toca Neon: cada `conftest.py` fuerza una base SQLite temporal.
 pytest
 ```
 
-`pytest.ini` ya le indica que corra las del gateway y las de cada servicio.
+`pytest.ini` le indica que corra las del gateway (`tests/`) y las de cada
+servicio (`services/*/tests`). Para correr solo las de un servicio:
+`pytest services/<repo>/tests`.
+
+Las pruebas propias del gateway recorren varios servicios a la vez:
+
+| Archivo | Qué comprueba |
+|---|---|
+| `test_gateway_flow.py` | Una sesión abierta en usuarios vale en los demás servicios: el docente crea un curso y edita una sección, el estudiante entra con el código, ve la edición y responde, y el docente ve la respuesta. Dos docentes editan la misma sección sin pisarse. Braille, señas y el estado del sistema responden sin sesión. Las fotos subidas antes de la separación se siguen sirviendo. |
+| `test_password_reset_flow.py` | Recuperar la contraseña de principio a fin; la respuesta no revela qué correos tienen cuenta; el enlace no sirve como sesión; sin correo configurado responde 503. |
+| `test_route_parity.py` | Están todas las rutas del monolito y solo las nuevas que se esperan. |
+| `test_security.py` | CORS solo para la web y localhost; nadie se registra como director sin el código; los tokens `dev:` no abren sesión sin `ALLOW_DEV_LOGIN`. |
+
+En GitHub, cada push o pull request a `main` corre las pruebas del gateway con
+cobertura y la sube a Codacy (`.github/workflows/codacy-coverage.yml`). Ese
+workflow no usa los submódulos: clona los ocho servicios desde su rama
+principal.
 
 ## Cambiar algo en un servicio
 
@@ -94,12 +189,20 @@ El paso 2 no es opcional: el gateway despliega la versión del submódulo que
 tiene apuntada, no la última de la rama. Es lo que garantiza que lo que se
 despliega es exactamente lo que se probó.
 
+Si el cambio añade una ruta nueva, hay que agregarla también a `NEW_ROUTES` en
+`tests/test_route_parity.py`.
+
 ## Desplegar en Render sin cortar el servicio actual
 
 Hoy la app usa `code4all-api`, que sale del monolito de
 `user-management-backend-service`. El gateway se despliega **al lado**, se
 prueba, y solo entonces se cambia la app de uno a otro. Volver atrás es
 deshacer un solo cambio.
+
+El despliegue usa el `Dockerfile` de este repositorio: Python 3.12, las
+librerías del sistema que necesita MediaPipe (`libgl1`, `libegl1`, `libgles2`,
+`libglib2.0-0`) y `uvicorn main:app`. Render clona los submódulos antes de
+construir.
 
 1. **Dar acceso a Render a los repositorios.** En GitHub: organización
    CODE4ALL-UV → Settings → GitHub Apps → Render → Configure → añadir los
@@ -115,7 +218,11 @@ deshacer un solo cambio.
      `GOOGLE_CLIENT_ID` es **obligatorio**: el servidor comprueba que cada
      inicio con Google sea de este Client ID, y sin él responde que Google
      no está configurado. Si la web y el móvil usan IDs distintos, van los
-     dos separados por comas.
+     dos separados por comas. (`GOOGLE_SERVER_CLIENT_ID` está declarada, pero
+     hoy el código del backend no la lee.)
+   - `DOCENTE_SIGNUP_CODE` y `DIRECTOR_SIGNUP_CODE`: los mismos de
+     `code4all-api`. Sin ellos nadie se puede registrar como docente ni como
+     director.
    - `FACEBOOK_APP_ID` y `FACEBOOK_APP_SECRET`: los de la app de Facebook
      (ver «Entrar con Facebook» más abajo). Opcionales.
    - `BREVO_API_KEY` y `MAIL_FROM`: para el correo de «¿Olvidaste tu
@@ -138,12 +245,16 @@ deshacer un solo cambio.
    `code4all-api`. Nada se borró: sigue funcionando igual que antes.
 7. **Cuando lleve unos días estable**, suspender `code4all-api` y, después,
    quitar el monolito de `user-management-backend-service` (`app/`, `main.py`,
-   `Dockerfile`, `render.yaml` y lo que sobre de `requirements.txt`). En ese
-   orden: si se quita antes de suspenderlo, el siguiente despliegue de
-   `code4all-api` falla.
+   `Dockerfile`, `render.yaml`, la carpeta `neon_storage/` que reexporta
+   `app/` y lo que sobre de `requirements.txt`). En ese orden: si se quita
+   antes de suspenderlo, el siguiente despliegue de `code4all-api` falla.
 
 La base de datos no cambia en ningún paso: el gateway usa las mismas tablas de
-Neon, y al arrancar solo crea lo que falte, que es nada.
+Neon, y al arrancar solo crea lo que falte. Lo único que añade la primera vez
+son las tablas y columnas de los cursos por docente, y deja todo lo anterior en
+el Curso general. Ese paso también cambia algunas restricciones únicas, pero
+solo en PostgreSQL: las pruebas automáticas usan SQLite, donde ese cambio se
+salta, así que conviene probarlo antes en una rama de Neon.
 
 ## Entrar con Facebook
 
@@ -186,5 +297,7 @@ Antes de separar uno que use la base:
 - Todos deben compartir `SECRET_KEY` (en Render, con un *Environment Group*).
 - Conviene usar la cadena del **pooler** de Neon: cada servicio abre su propio
   grupo de conexiones, y la base gratuita admite unas 100 directas.
-- El servicio necesita `neon-storage` y `user-management` en su imagen, igual
-  que aquí: como submódulos de su propio repositorio.
+- El servicio necesita `neon-storage` en su imagen y, si comprueba la sesión,
+  también `user-management`, igual que aquí: como submódulos de su propio
+  repositorio. assessment necesita además `course-content`, de donde toma las
+  reglas de acceso a cada curso.
