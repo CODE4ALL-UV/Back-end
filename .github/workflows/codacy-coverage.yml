@@ -16,6 +16,8 @@ jobs:
       # 1. Descargar el código del repositorio
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       # 2. Configurar la versión de Python
       - name: Set up Python
@@ -23,31 +25,21 @@ jobs:
         with:
           python-version: '3.14'
 
-      # 3. Clonar repos hermanos requeridos por las pruebas
-      - name: Checkout sibling services
-        run: |
-          git clone https://github.com/CODE4ALL-UV/neon-storage-backend-service ../neon-storage-backend-service
-          git clone https://github.com/CODE4ALL-UV/course-content-backend-service ../course-content-backend-service
-          git clone https://github.com/CODE4ALL-UV/user-management-backend-service ../user-management-backend-service
-
-      # 4. Instalar dependencias
+      # 3. Instalar dependencias
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt \
-            -r ../neon-storage-backend-service/requirements.txt \
-            -r ../course-content-backend-service/requirements.txt \
-            -r ../user-management-backend-service/requirements.txt
+          pip install -r requirements.txt
           pip install pytest pytest-cov
 
-      # 5. Ejecutar pruebas y generar el archivo coverage.xml
+      # 4. Ejecutar pruebas y generar el archivo coverage.xml
       - name: Run tests with coverage
         env:
-          PYTHONPATH: ../neon-storage-backend-service:../course-content-backend-service:../user-management-backend-service
+          PYTHONPATH: services/neon-storage-backend-service:services/course-content-backend-service:services/user-management-backend-service:services/assessment-backend-service:services/progress-tracking-backend-service:services/accessibility-backend-service:services/multimodal-interaction-backend-service:services/device-management-backend-service
         run: |
           pytest tests --cov=. --cov-report=xml
 
-      # 6. Enviar el reporte coverage.xml a Codacy usando el Token guardado
+      # 5. Enviar el reporte coverage.xml a Codacy usando el Token guardado
       - name: Run codacy-coverage-reporter
         uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699
         with:
